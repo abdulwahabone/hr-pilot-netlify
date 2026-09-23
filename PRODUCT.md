@@ -25,7 +25,7 @@ One simple platform built specifically for small software teams: a single dashbo
 ## Operating Context
 
 - Web app served at localhost in development; landing page, login, and protected dashboard.
-- Postgres database with Drizzle ORM; demo reseedable via `npm run seed`.
+- Netlify Database (Postgres) with Drizzle ORM; demo data ships as a migration, locally resettable via `npm run db:reset`.
 - Two roles: `ADMIN` (approve/reject, view all payroll) and regular employees (own records only).
 - Demo credentials documented in README and shown on the login page.
 
@@ -53,7 +53,7 @@ One simple platform built specifically for small software teams: a single dashbo
 
 ## Evidence on Hand
 
-- Seeded demo: 20 employees, admin account, sample leave/claim/payroll data (`prisma/seed.ts`)
+- Seeded demo: 20 employees, admin account, sample leave/claim/payroll data (`netlify/database/migrations/0001_demo_data.sql`)
 - Landing stats (21 people onboard, 4 core modules, 100% cloud based access) — illustrative demo figures, not live metrics
 - Do not fabricate customer logos, testimonials, case studies, or compliance certifications
 

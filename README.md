@@ -4,8 +4,8 @@ A practice HR SaaS app: one landing page, a simple login, and a dashboard with f
 **Leaves**, **Payroll**, **Claims**, and **Settings** - seeded with an admin account and a 20-person
 software company.
 
-This edition is built for **Netlify**: a static Vite single-page app plus Netlify Functions as the
-API, with Drizzle ORM on Postgres.
+This edition is built for **Netlify**: a static Vite single-page app, Netlify Functions as the
+API, and **Netlify Database** (Netlify's built-in Postgres) queried with Drizzle ORM.
 
 ## Tech stack
 
@@ -14,51 +14,55 @@ API, with Drizzle ORM on Postgres.
 - **Netlify Functions** (v2 API, `netlify/functions/*.mts`) serve `/api/*`. Each function declares
   its own route with `export const config = { path: "/api/..." }`.
 - **Tailwind CSS v4** + **shadcn/ui** (built on Base UI), Geist fonts via Fontsource.
-- **Drizzle ORM + Postgres** (`postgres` driver). Schema in `db/schema.ts`, SQL migrations in
-  `drizzle/`.
+- **Netlify Database** through `@netlify/database`, with **Drizzle ORM** for queries. There is no
+  connection string to configure: Netlify supplies it per environment. Schema in `db/schema.ts`,
+  SQL migrations in `netlify/database/migrations/`, including the demo data.
 - **bcryptjs** password hashes and a random session token stored in the `sessions` table, sent as
   an httpOnly cookie. No third-party auth provider - this is intentionally simple.
 
 ## Local setup
 
-You need Node 22.22+ and a local Postgres. The Netlify CLI is used through `npx`, so no global
-install is required.
+You need Node 22.22+ and the Netlify CLI 26+ (`npm install -g netlify-cli`). No Postgres install,
+Netlify account, or linked site is needed: `netlify dev` runs a local Postgres-compatible database
+(PGlite, stored in `.netlify/db`).
 
 ```bash
-createdb hr_pilot_netlify        # an empty local database
-cp .env.example .env             # DATABASE_URL=postgresql://localhost:5432/hr_pilot_netlify
 npm install
-npm run db:migrate               # applies the SQL in drizzle/
-npm run seed                     # admin + 20 employees + sample leaves, claims and payslips
-npx netlify dev --offline        # Vite on :5174 behind Netlify Dev on :3102
+netlify dev --offline            # app on http://localhost:3102, local database started
+npm run db:migrate               # in a second terminal: creates the tables and demo data
 ```
 
-Then open [http://localhost:3102](http://localhost:3102). Netlify Dev serves the Vite app, runs the
-functions for `/api/*`, and applies the SPA fallback from `netlify.toml`, just like production.
-`--offline` keeps it from contacting Netlify, so no login or linked site is needed
-(`npm run dev:netlify` runs the same command).
+Then open [http://localhost:3102](http://localhost:3102). Netlify Dev serves the Vite app (port
+5174), runs the functions for `/api/*`, and applies the SPA fallback from `netlify.toml`, just like
+production. `--offline` keeps it from contacting Netlify. `npm run dev:netlify` runs the same
+command.
 
-> Re-running `npm run seed` at any time wipes and regenerates all data back to a clean demo state.
+Run `npm run db:migrate` once after the first start, and again whenever a new migration appears; it
+only applies migrations that are not applied yet. The data persists between `netlify dev` runs.
 
-Other scripts: `npm run build` (typecheck + production build), `npm run lint`,
-`npm run db:generate` (new migration after editing `db/schema.ts`).
+> `npm run db:reset` wipes the local database and re-applies every migration, which puts the demo
+> data back to its starting state.
+
+Other scripts: `npm run build` (typecheck + production build), `npm run lint`, and
+`npm run db:generate` (writes a new migration after you edit `db/schema.ts`).
+`netlify database connect` opens a SQL prompt on the local database while `netlify dev` runs.
 
 ## Deploy on Netlify
 
 1. Push this repo to GitHub and choose **Add new project -> Import an existing project** in
    Netlify. The build settings come from `netlify.toml` (`npm run build`, publish `dist`, functions
    in `netlify/functions`).
-2. Add a database: either **Netlify DB** (Extensions -> Neon), which sets `NETLIFY_DATABASE_URL`
-   automatically, or any hosted Postgres - set `DATABASE_URL` under **Project configuration ->
-   Environment variables**. `DATABASE_URL` wins when both are set.
-3. Create the tables and demo data once, from your machine, against that database:
+2. Deploy. Because the project depends on `@netlify/database`, Netlify provisions the database
+   during the build and applies everything in `netlify/database/migrations/` before the deploy is
+   published, including the demo data in `0001_demo_data.sql`. There are no environment variables
+   to set and nothing to run by hand.
 
-   ```bash
-   DATABASE_URL="postgresql://...your connection string..." npm run db:migrate
-   DATABASE_URL="postgresql://...your connection string..." npm run seed
-   ```
+Every deploy preview gets its own database branch, migrated the same way, so a preview never
+touches production data. A failed migration fails the deploy instead of publishing it.
 
-4. Trigger a deploy. The session cookie is marked `Secure` automatically on HTTPS.
+Migrations run once per database. Editing an applied migration file changes nothing, so any
+schema or data change needs a new migration (`npm run db:generate`, or
+`npx drizzle-kit generate --custom --name <slug>` for hand-written SQL).
 
 ## Demo credentials
 
@@ -71,7 +75,8 @@ password reset flow. Credentials are shown right on the login page too.
 | Employee | `ahmad.faiz` | `password123` |
 
 All 20 seeded employees share the password `password123`, with usernames in `firstname.lastname`
-format (e.g. `wei.jian`, `priya.sharma`, `farah.aziz` - see `db/seed.ts` for the full list).
+format (e.g. `wei.jian`, `priya.sharma`, `farah.aziz` - see
+`netlify/database/migrations/0001_demo_data.sql` for the full list).
 
 ## Modules
 
@@ -114,11 +119,11 @@ src/
   components/               shadcn/ui primitives + feature components
   lib/                      API client, session context, formatting helpers
 netlify/functions/          One file per API route (Netlify Functions v2)
-server/                     Code shared by functions: db pool, auth, HTTP helpers
+netlify/database/migrations/  SQL migrations Netlify applies on deploy (schema + demo data)
+server/                     Code shared by functions: database client, auth, HTTP helpers
 db/
   schema.ts                 Drizzle schema
-  seed.ts                   Seed script
-drizzle/                    Generated SQL migrations
+  client.ts                 Drizzle on top of @netlify/database
 netlify.toml                Build, functions, dev server and SPA fallback
 ```
 
@@ -126,4 +131,6 @@ netlify.toml                Build, functions, dev server and SPA fallback
 
 - Route protection has two layers: the dashboard layout calls `/api/auth/me` and redirects to
   `/login` on a 401, and every function checks the session and role again on the server.
-- Each function keeps one small Postgres pool per instance and reuses it while the instance is warm.
+- Each function creates its database client once per instance and reuses it while the instance is
+  warm. Deployed functions query over Netlify Database's serverless (HTTP) driver; under
+  `netlify dev` they use a regular Postgres pool against the local database.

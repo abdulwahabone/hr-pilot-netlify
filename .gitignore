@@ -8,9 +8,8 @@ dist
 # Netlify CLI state
 .netlify
 
-# env files (DATABASE_URL lives here locally)
+# env files
 .env*
-!.env.example
 
 # misc
 .DS_Store

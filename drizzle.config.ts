@@ -1,14 +1,11 @@
-import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
-const url = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
-if (!url) {
-  throw new Error("Set DATABASE_URL (or NETLIFY_DATABASE_URL) before running drizzle-kit.");
-}
-
+// `npm run db:generate` writes new SQL migrations straight into the directory
+// Netlify Database applies on every deploy. Hand-written data migrations are
+// added with `npx drizzle-kit generate --custom --name <slug>` so the numbering
+// stays in drizzle-kit's journal (meta/), which Netlify ignores.
 export default defineConfig({
   dialect: "postgresql",
   schema: "./db/schema.ts",
-  out: "./drizzle",
-  dbCredentials: { url },
+  out: "./netlify/database/migrations",
 });

@@ -11,8 +11,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -b",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "seed": "tsx db/seed.ts"
+    "db:migrate": "netlify database migrations apply",
+    "db:reset": "netlify database reset && netlify database migrations apply"
   },
   "engines": {
     "node": ">=22.22.0"
@@ -21,13 +21,15 @@
     "@base-ui/react": "^1.8.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
+    "@neondatabase/serverless": "^1.1.0",
+    "@netlify/database": "^2.0.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.3",
     "lucide-react": "^1.47.0",
     "next-themes": "^0.4.6",
-    "postgres": "^3.4.9",
+    "pg": "^8.23.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0",
@@ -41,10 +43,10 @@
     "@netlify/functions": "^6.0.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.20.4",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "dotenv": "^18.0.3",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -52,7 +54,6 @@
     "globals": "^17.12.0",
     "shadcn": "^4.21.0",
     "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.70.1",
     "vite": "^8.3.0"
