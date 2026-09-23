@@ -1,0 +1,20 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+
+[dev]
+  framework = "vite"
+  command = "npm run dev"
+  targetPort = 5174
+  port = 3102
+
+# Client-side routes (/login, /dashboard/...) all load the SPA shell.
+# Functions declare their own /api/* paths in `export const config`, and those
+# take precedence over redirects, so this fallback never swallows the API.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
